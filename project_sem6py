@@ -1,0 +1,327 @@
+import cx_Oracle
+from datetime import datetime
+from datetime import date
+con= cx_Oracle.connect('PROJECT/123@xe')
+cur= con.cursor()
+
+def mainmenu():
+    print("MAIN MENU")
+    print("1. Sign Up")
+    print("2. Sign In")
+    print("3. Admin Sign In")
+    print("4. Exit")
+    x=input("Enter Choice:")
+    if x=='1':
+        signup()
+    elif x=='2':
+        signin()
+    elif x=='3':
+        adminsignin()
+    elif x=='4':
+        exit()
+    else:
+        print("Enter valid option")
+        mainmenu()
+
+def signup():
+    print("ENTER INFORMATION:")
+    fname=input("Firstname:")
+    lname=input("Lastname:")
+    name="%s %s" %(fname,lname)
+    print("Address:")
+    add1=input("Line1:")
+    add2=input("Line2:")
+    add3=input("city:")
+    add4=input("State:")
+    add5=x1()
+    add="%s %s , %s , %s, %d" %(add1,add2,add3,add4,add5)
+    type1=x2()
+    pass1=x3()
+    bal=x4(type1)
+    cur.execute('select c_id.nextval,a_id.nextval from dual')
+    con.commit()
+    res= cur.fetchall()
+    for r in res:
+        id1="%s%d" %('CID',r[0])
+        id2="%s%d" %('ACN00',r[1])
+    cur.execute('INSERT INTO CUSTOMER VALUES(:1,:2,:3,:4,:5,:6,:7)',(id1,id2,name,add,type1,bal,pass1))
+    con.commit()
+    print("New Customer Id created.")
+    print("Customer Id:"+id1)
+    print("Account no."+id2)
+    mainmenu()
+    
+def signin():
+    x=0
+    i=1
+    list1=[]
+    while x<3:
+        cid=input("Customer Id:")
+        p=input("Password:")
+        cur.execute('SELECT * from CUSTOMER WHERE cus_id=:1 and password=:2',(cid,p))
+        res=cur.fetchall()
+        con.commit()
+        if res:
+            for r in res:
+                mul="%d %s %s" %(i,'.',r[1])
+                list1.append(r[1])
+                print(mul)
+                i+=1
+            if i>1:
+                x=int(input("You have multiple account. please enter choice given above account no. for transaction(1,2,...):"))
+                submenu(cid,list1[x-1],p)
+            else:
+                submenu(cid,r[1],p)
+        else:
+            print("Invalid USER-ID/Password!")
+            x+=1
+    if x==3 :
+        print("More than 3 attempts are not allowed")
+        mainmenu()
+        
+def adminsignin():
+    x=0
+    while x<3:
+        admin=input("Admin Id:")
+        p=input("Password:")
+        cur.execute('SELECT * from admin1 WHERE adminid=:1 and password=:2',(admin,p))
+        r=cur.fetchall()
+        con.commit()
+        print(r)
+        if r:
+            submenu2(admin,p)
+        else:
+            print("Invalid USER-ID/Password!")
+            x+=1
+    if x==3:
+        print("More than 3 attempts are not allowed")
+        mainmenu()
+
+def x1():
+    add5=int(input("Pincode:"))
+    if add5 >= 100000 and add5 <= 999999:
+        return add5
+    else:
+        print("Enter 6 digit number:")
+        x1()
+
+def x2():
+    type1=input("Type of account(SA,CA):")
+    if type1!="SA" and type1!="CA":
+        print("Invalid entry")
+        x2()
+    else:
+        return type1
+
+def x3():
+    pass1=input("Password(8-Digit):")
+    t=len(pass1)
+    if(t>=8):
+        return pass1
+    else:
+        print("invalid password(too short)")
+        x3()
+
+def x4(type1):
+    if type1=="CA":
+        bal=5000
+    else:
+        bal=0
+    return bal
+
+def submenu(cid,acc,p):
+    print("SUB MENU")
+    print("1. Address Change")
+    print("2. Open Account")
+    print("3. Money Deposit")
+    print("4. Money Withdrawal")
+    print("5. Print Statement")
+    print("6. Transfer Money")
+    print("7. Account Closure")
+    print("0. Customer Logout")
+    x=int(input("Enter Choice:"))
+    if x==1:
+        changeaddress(cid)
+        print("Address is changed")
+        submenu(cid,acc,p)
+    elif x==2:
+        openacc(cid,p)
+    elif x==3:
+        ammount=int(input("Enter the ammount:"))
+        deposit(cid,acc,ammount)
+        submenu(cid,acc,p)
+    elif x==4:
+        ammount=int(input("Enter the ammount:"))
+        withdrawal(cid,acc,ammount)
+        submenu(cid,acc,p)
+    elif x==5:
+        datef=input("mm/dd/yyyy")
+        datet=input("mm/dd/yyyy")
+        print(datef,datet)
+        printstatement(acc,datef,datet)
+        submenu(cid,acc,p)
+    elif x==6:
+        acc2=input("Enter account no. to transfer money: ")
+        ammount=int(input("Enter the ammount:"))
+        transfer(cid,acc,acc2,ammount)
+        submenu(cid,acc,p)
+    elif x==7:
+        accountclose(acc,p)
+        print("Your account is closed")
+        mainmenu()
+    elif x==0:
+        mainmenu()
+    else:
+        print("Choose correct option")
+        submenu(cid,acc,p)
+
+def changeaddress(cid):
+    add1=input("Line1:")
+    add2=input("Line2:")
+    add3=input("city:")
+    add4=input("State:")
+    add5=x1()
+    add="%s %s , %s , %s %d" %(add1,add2,add3,add4,add5)
+    cur.execute('UPDATE CUSTOMER set address=:1 where cus_id=:2',(add,cid))
+    print("Address changed...")
+    con.commit()
+
+def openacc(cip,p):
+    print("1. Open SA")
+    print("1. Open CA")
+    print("1. Open FD")
+    type1=x2()
+    bal=x4(type1)
+    cur.execute('SELECT A_ID.NEXTVAL FROM DUAL')
+    con.commit()
+    res=cur.fetchall()
+    for r in res:
+        id2="%s%d" %('ACN00',r[0])
+    cur.execute('SELECT * FROM CUSTOMER WHERE cus_id=:1 and password=:2',(cip,p))
+    con.commit()
+    res=cur.fetchall()
+    for r in res:
+        cur.execute('INSERT INTO CUSTOMER VALUES(:1,:2,:3,:4,:5,:6,:7)',(cip,id2,r[2],r[3],type1,bal,p))
+        con.commit()
+    print("New Customer Id created.")
+    print("Customer Id:"+cip)
+    print("Account no."+id2)
+    submenu(cip,id2,p)
+
+def deposit(cid,acc,ammount):  
+    today= date.today()
+    p="%s %d" %('deposit',ammount)
+    cur.execute('SELECT balance FROM CUSTOMER WHERE acc_no=:1 and balance>=:2 or balance<:2',(acc,ammount))
+    con.commit()
+    res=cur.fetchall()
+    for r in res:
+        cur.execute('INSERT INTO RECORD VALUES(:1,:2,:3,:4,:5)',(cid,acc,today,p,r[0]+ammount))
+        break
+    cur.execute('UPDATE CUSTOMER SET balance=balance+:1 where acc_no=:2' ,(ammount,acc))
+    print("Deposit successful")
+    con.commit()
+    
+def withdrawal(cid,acc,ammount):
+    today= date.today()
+    p="%s %d" %('withdrawal',ammount)
+    cur.execute('SELECT balance,type FROM CUSTOMER WHERE acc_no=:1 and balance>=:2',(acc,ammount))
+    con.commit()
+    res=cur.fetchall()
+    if res:
+        for r in res:
+            ty=r[1]
+            am=r[0]-ammount
+        if (ty=='CA' and am>=5000) or ty!='CA':
+            cur.execute('UPDATE CUSTOMER SET balance=balance-:1 where acc_no=:2 and balance>:1' ,(ammount,acc))
+            cur.execute('INSERT INTO RECORD VALUES(:1,:2,:3,:4,:5)',(cid,acc,today,p,am))
+            print("Withdrawal successful")
+            con.commit()
+        else:
+            print("min balance is not sufficient")
+    else:
+        print("insufficient amount..")
+        submenu(acc,p)
+
+def transfer(cid,acc,acc2,ammount):
+    today= date.today()
+    p="%s %d %s %s" %('Tranfer',ammount,'to',acc2)
+    cur.execute('SELECT balance,type FROM CUSTOMER WHERE acc_no=:1 and balance>=:2',(acc,ammount))
+    con.commit()
+    res=cur.fetchall()
+    if res:
+        for r in res:
+            ty=r[1]
+            am=r[0]-ammount
+        if (ty=='CA' and am>=5000) or ty!='CA':
+            cur.execute('UPDATE CUSTOMER SET balance=balance-:1 where acc_no=:2 and balance>:1' ,(ammount,acc))
+            cur.execute('INSERT INTO RECORD VALUES(:1,:2,:3,:4,:5)',(cid,acc,today,p,am))
+            print("Withdrawal successful")
+            con.commit()
+            cur.execute('SELECT balance,cus_id FROM CUSTOMER WHERE acc_no=:1 and balance>=:2 or balance<:2',(acc2,ammount))
+            con.commit()
+            res=cur.fetchall()
+            p="%s %d %s %s" %('deposit',ammount,'by',acc)
+            for r in res:
+                cur.execute('INSERT INTO RECORD VALUES(:1,:2,:3,:4,:5)',(r[1],acc2,today,p,r[0]+ammount))
+                break
+            cur.execute('UPDATE CUSTOMER SET balance=balance+:1 where acc_no=:2' ,(ammount,acc2))
+            print("Deposit successful")
+            con.commit()
+        else:
+            print("min balance is not sufficient")
+    else:
+        print("insufficient amount..")
+        print("Transaction failed")
+    
+def printstatement(acc,datefrom,dateto):
+    d1=datetime.strptime(datefrom, '%m/%d/%Y')
+    d2=datetime.strptime(dateto, '%m/%d/%Y')
+    if d1>d2 :
+        print("invalid date")
+    else:
+        cur.execute('SELECT * FROM RECORD WHERE (acc_no=:1 AND (activity_date>=:2 AND activity_date<=:3))',(acc,d1,d2))
+        con.commit()
+        res=cur.fetchall()
+        if res:
+            for r in res:
+                print(r)
+        else:
+            print("No Record Found")
+            
+def accountclose(acc,p):
+    today= date.today()
+    cur.execute('SELECT cus_id,acc_no,balance,address FROM CUSTOMER WHERE acc_no=:1 AND password=:2',(acc,p))
+    con.commit()
+    res=cur.fetchall()
+    for r in res:
+        cur.execute('insert into history values(:1,:2,:3,:4,:5)',(r[0],r[1],r[2],today,r[3]))
+        con.commit()
+        break
+    cur.execute('DELETE CUSTOMER WHERE acc_no=:1 and password=:2',(acc,p))
+    con.commit()
+    msg="%s %s %s" %(r[2],'amount is send to',r[3])
+    print(msg)
+
+def submenu2(admin,p):
+    print("1. Print closed account history")
+    print("2. Admin logout")
+    x=int(input("Enter choice"))
+    if x==1:
+        cur.execute("SELECT * FROM HISTORY")
+        con.commit()
+        res=cur.fetchall()
+        if res:
+            for r in res:
+                print(r)
+            submenu2(admin,p)
+        else:
+            print("History not found")
+            submenu2(admin,p)
+    elif x==2:
+        mainmenu()
+    else:
+        print("Invalid choice")
+        submenu2(admin,p)
+
+mainmenu()
+con.close()
